@@ -93,15 +93,15 @@ Goal: simplest full path produces valid records, proven by tests.
 
 ## Phase 4 — Remaining dataset types, schemas & formats
 
-- [ ] 🔴 `test_generators_instruction.py` / `_summary.py` / `_rag.py` (rag = no LLM)
-- [ ] 🟢 `generators/instruction.py`, `generators/summary.py`, `generators/rag.py`
-- [ ] 🔴 `test_schemas.py` (extend) — render snapshots for `alpaca`/`sharegpt`/`completion`/`rag`/`raw`; **compatibility matrix enforced** (unsupported type×schema skipped + logged, never malformed)
-- [ ] 🟢 `schemas/alpaca.py`, `sharegpt.py`, `completion.py`, `rag.py`, `raw.py`
-- [ ] 🔴 `test_exporters_hf.py` — `HfExporter` output round-trips via `datasets.load_from_disk()`
-- [ ] 🟢 `exporters/hf.py`
-- [ ] 🔴 `test_cli_schemas_multi.py` — `schemas` lists adapters+types; `generate -t all -s a -s b -f jsonl -f hf` emits one dataset per schema; incompatible pairs skipped with warning
-- [ ] 🟢 `cli.py` — `schemas` command, `--system-prompt`, `--cite-in-answer`, multi `-t/-s/-f`
-- [ ] **Phase gate**: full matrix covered by tests
+- [x] 🔴 `test_generators_instruction.py` / `_summary.py` / `_rag.py` (rag = no LLM)
+- [x] 🟢 `generators/instruction.py`, `generators/summary.py`, `generators/rag.py`
+- [x] 🔴 `test_schemas.py` (extend) — render snapshots for `alpaca`/`sharegpt`/`completion`/`rag`/`raw`; **compatibility matrix enforced** (unsupported type×schema skipped + logged, never malformed)
+- [x] 🟢 `schemas/alpaca.py`, `sharegpt.py`, `completion.py`, `rag.py`, `raw.py`
+- [x] 🔴 `test_exporters_hf.py` — `HfExporter` output round-trips via `datasets.load_from_disk()`
+- [x] 🟢 `exporters/hf.py`
+- [x] 🔴 `test_cli_schemas_multi.py` — `schemas` lists adapters+types; `generate -t all -s a -s b -f jsonl -f hf` emits one dataset per schema; incompatible pairs skipped with warning
+- [x] 🟢 `cli.py` — `schemas` command, `--system-prompt`, `--cite-in-answer`, multi `-t/-s/-f`
+- [x] **Phase gate**: full matrix covered by tests
 
 ## Phase 5 — Knowledge-injection enhancements
 
