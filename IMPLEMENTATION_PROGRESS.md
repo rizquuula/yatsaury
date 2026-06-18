@@ -28,17 +28,17 @@ Rules of this file:
 
 Goal: project boots, `yatsaury --help` works, test infrastructure runs.
 
-- [ ] `pyproject.toml` via `uv init` (deps incl. pytest/respx, ruff/mypy config, entry point `yatsaury = "yatsaury.cli:app"`)
-- [ ] `src/yatsaury/` package layout (`__init__.py`, `__main__.py`)
-- [ ] Test harness: `tests/conftest.py`, `tests/fixtures/`, pytest config (markers incl. `e2e`), coverage
-- [ ] 🔴 `test_models.py` — `Document`/`Chunk`/`Citation`/`Sample` validate, (de)serialize, reject bad input
-- [ ] 🟢 `models.py` — implement the Pydantic v2 models
-- [ ] 🔴 `test_config.py` — precedence flag > env > `.env` > toml > default; secret masking
-- [ ] 🟢 `config.py` — pydantic-settings `Settings` (layered)
-- [ ] 🔴 `test_cli_smoke.py` — Typer `--help` exits 0 and lists verbs (CliRunner)
-- [ ] 🟢 `cli.py` — empty Typer app + stubbed subcommands
-- [ ] `.gitignore`, `.env.example`, `config.example.toml`, `README.md` stub
-- [ ] **Phase gate**: `uv run pytest` green; `uv run yatsaury --help` works
+- [x] `pyproject.toml` via `uv init` (deps incl. pytest/respx, ruff/mypy config, entry point `yatsaury = "yatsaury.cli:app"`)
+- [x] `src/yatsaury/` package layout (`__init__.py`, `__main__.py`)
+- [x] Test harness: `tests/conftest.py`, `tests/fixtures/`, pytest config (markers incl. `e2e`), coverage
+- [x] 🔴 `test_models.py` — `Document`/`Chunk`/`Citation`/`Sample` validate, (de)serialize, reject bad input
+- [x] 🟢 `models.py` — implement the Pydantic v2 models
+- [x] 🔴 `test_config.py` — precedence flag > env > `.env` > toml > default; secret masking
+- [x] 🟢 `config.py` — pydantic-settings `Settings` (layered)
+- [x] 🔴 `test_cli_smoke.py` — Typer `--help` exits 0 and lists verbs (CliRunner)
+- [x] 🟢 `cli.py` — empty Typer app + stubbed subcommands
+- [x] `.gitignore`, `.env.example`, `config.example.toml`, `README.md` stub
+- [x] **Phase gate**: `uv run pytest` green; `uv run yatsaury --help` works
 
 ## Phase 1 — End-to-end vertical slice (MVP)
 
