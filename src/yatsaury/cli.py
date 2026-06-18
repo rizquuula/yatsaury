@@ -38,6 +38,8 @@ def generate(
     base_url: str = typer.Option("", "--base-url"),
     api_key: str = typer.Option("", "--api-key"),
     limit_chunks: int = typer.Option(0, "--limit-chunks", help="0 = no limit"),
+    paraphrases: int = typer.Option(1, "--paraphrases", help="Paraphrase variants per Q&A"),
+    difficulty: str = typer.Option("", "--difficulty", help="Comma-separated: easy,medium,hard"),
 ) -> None:
     """Generate training samples from source documents."""
     import yatsaury.exporters.hf  # noqa: F401
@@ -67,6 +69,8 @@ def generate(
         llm_base_url=base_url or settings.base_url,
         llm_api_key=api_key or settings.api_key.get_secret_value(),
         llm_model=model or settings.model,
+        paraphrases=paraphrases,
+        difficulty=[d.strip() for d in difficulty.split(",") if d.strip()],
     )
     orch = Orchestrator(config)
     records = orch.run(input)

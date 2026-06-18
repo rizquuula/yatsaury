@@ -48,6 +48,8 @@ class OrchestratorConfig:
     llm_base_url: str = "https://api.openai.com/v1"
     llm_api_key: str = ""
     llm_model: str = "gpt-4o-mini"
+    paraphrases: int = 1
+    difficulty: list[str] = field(default_factory=list)
 
 
 class Orchestrator:
@@ -94,7 +96,11 @@ class Orchestrator:
                 for dtype in cfg.dataset_types:
                     try:
                         generator = get_generator(dtype)
-                        samples = generator.generate(chunk, cfg.per_chunk, llm)
+                        samples = generator.generate(
+                            chunk, cfg.per_chunk, llm,
+                            paraphrases=cfg.paraphrases,
+                            difficulty=cfg.difficulty if cfg.difficulty else None,
+                        )
                     except Exception:
                         logger.exception(
                             "Chunk %s failed for dataset_type=%s — skipping", chunk.id, dtype

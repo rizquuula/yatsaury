@@ -13,7 +13,7 @@ class RagGenerator:
 
     dataset_type = "rag"
 
-    def generate(self, chunk: Chunk, n: int, llm: LLMClient) -> list[Sample]:
+    def generate(self, chunk: Chunk, n: int, llm: LLMClient, **kwargs) -> list[Sample]:
         """Return exactly 1 Sample per chunk, fully grounded and verified.
 
         - n is ignored; always produces exactly 1 sample

@@ -14,7 +14,7 @@ class InstructionGenerator:
 
     dataset_type = "instruction"
 
-    def generate(self, chunk: Chunk, n: int, llm: LLMClient) -> list[Sample]:
+    def generate(self, chunk: Chunk, n: int, llm: LLMClient, **kwargs) -> list[Sample]:
         """Call the LLM and convert response triples into Sample objects.
 
         - Returns [] if LLM responds with {"insufficient": true}

@@ -14,7 +14,7 @@ class SummaryGenerator:
 
     dataset_type = "summary"
 
-    def generate(self, chunk: Chunk, n: int, llm: LLMClient) -> list[Sample]:
+    def generate(self, chunk: Chunk, n: int, llm: LLMClient, **kwargs) -> list[Sample]:
         """Call the LLM and convert the summary response into a Sample object.
 
         - n is ignored; always produces at most 1 sample
