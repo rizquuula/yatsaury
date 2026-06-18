@@ -105,17 +105,17 @@ Goal: simplest full path produces valid records, proven by tests.
 
 ## Phase 5 — Knowledge-injection enhancements
 
-- [ ] 🔴 `test_paraphrases.py` — N paraphrases per fact share a `fact_id`
-- [ ] 🟢 `--paraphrases`
-- [ ] 🔴 `test_difficulty.py` — easy/medium/hard mix produced
-- [ ] 🟢 `--difficulty`
-- [ ] 🔴 `test_fact_extraction.py` — fact-extraction step yields atomic facts; Q&A generated per fact
-- [ ] 🟢 optional fact-extraction step (`fact_id` on samples)
-- [ ] 🔴 `test_bidirectional.py` — inverse question generated for a fact
-- [ ] 🟢 bidirectional / inverse questions
-- [ ] 🔴 `test_coverage_report.py` — flags facts with too few samples
-- [ ] 🟢 coverage report
-- [ ] **Phase gate**: suite green
+- [x] 🔴 `test_paraphrases.py` — N paraphrases per fact share a `fact_id`
+- [x] 🟢 `--paraphrases`
+- [x] 🔴 `test_difficulty.py` — easy/medium/hard mix produced
+- [x] 🟢 `--difficulty`
+- [x] 🔴 `test_fact_extraction.py` — fact-extraction step yields atomic facts; Q&A generated per fact
+- [x] 🟢 optional fact-extraction step (`fact_id` on samples)
+- [x] 🔴 `test_bidirectional.py` — inverse question generated for a fact
+- [x] 🟢 bidirectional / inverse questions
+- [x] 🔴 `test_coverage_report.py` — flags facts with too few samples
+- [x] 🟢 coverage report
+- [x] **Phase gate**: suite green
 
 ## Phase 6 — Polish
 
