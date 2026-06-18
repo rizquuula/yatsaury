@@ -27,11 +27,12 @@ Goal: simplest full path produces valid JSONL.
 - [ ] `llm/client.py` — `LLMClient` (openai SDK + `base_url`, JSON mode, tenacity retries)
 - [ ] `llm/prompts.py` — grounding-first Q&A generation prompt
 - [ ] `generators/qa.py` — `QaGenerator` + `generators/base.py` protocol & registry
-- [ ] `exporters/jsonl.py` — `JsonlExporter` + `exporters/base.py` protocol & registry
-- [ ] `pipeline.py` — minimal Orchestrator wiring the above
-- [ ] `cli.py` — implement `generate` (text → qa → jsonl)
+- [ ] `schemas/base.py` — `SchemaAdapter` protocol + registry; `schemas/chatml.py` + `schemas/qa.py` (two adapters to prove the axis)
+- [ ] `exporters/jsonl.py` — `JsonlExporter` + `exporters/base.py` protocol & registry (operates on rendered dicts)
+- [ ] `pipeline.py` — minimal Orchestrator wiring generate → render (schema) → serialize
+- [ ] `cli.py` — implement `generate` (text → qa → schema → jsonl) with `-s/--schema`
 - [ ] `examples/sirah_sample.txt`
-- [ ] **Verify**: `uv run yatsaury generate -i examples/sirah_sample.txt -t qa -f jsonl -o ./out --base-url http://localhost:11434/v1 --model llama3.1 --limit-chunks 2` → `out.jsonl` lines are valid JSON with `question`/`answer`/`supporting_quote`/`source_citation`
+- [ ] **Verify**: `uv run yatsaury generate -i examples/sirah_sample.txt -t qa -s chatml -f jsonl -o ./out --base-url http://localhost:11434/v1 --model llama3.1 --limit-chunks 2` → `out.jsonl` lines are valid ChatML records (`messages[]`); re-running with `-s qa` yields `question`/`answer` records from the same `Sample`
 
 ## Phase 2 — Real sources
 
@@ -56,14 +57,16 @@ Goal: tool becomes trustworthy for religious content.
 - [ ] `cli.py` — `export` builds final dataset from approved rows
 - [ ] **Verify**: a deliberately unsupported sample is dropped by quote-check/judge; `--min-score` filters; review CSV opens in a spreadsheet; `export` keeps only `approved` rows
 
-## Phase 4 — Remaining dataset types & formats
+## Phase 4 — Remaining dataset types, schemas & formats
 
 - [ ] `generators/instruction.py` — `InstructionGenerator`
 - [ ] `generators/rag.py` — `RagGenerator` (no LLM; chunk + metadata)
 - [ ] `generators/summary.py` — `SummaryGenerator`
+- [ ] `schemas/` — remaining adapters: `alpaca.py`, `sharegpt.py`, `completion.py`, `rag.py`, `raw.py`; enforce compatibility matrix (skip+log unsupported type×schema)
+- [ ] `cli.py` — `schemas` command (list adapters + compatible types); `--system-prompt`, `--cite-in-answer`
 - [ ] `exporters/hf.py` — `HfExporter` (`datasets` lib)
-- [ ] `cli.py` — `--type all`, multi-format `-f` output
-- [ ] **Verify**: `-t all -f hf` writes a dataset that round-trips via `datasets.load_from_disk()`
+- [ ] `cli.py` — `--type all`, multi-schema `-s` and multi-format `-f` output in one run
+- [ ] **Verify**: `-t all -s chatml -s sharegpt -s alpaca -f jsonl -f hf` writes one dataset per schema; each HF dataset round-trips via `datasets.load_from_disk()`; incompatible pairs (e.g. `rag` × `alpaca`) are skipped with a warning
 
 ## Phase 5 — Knowledge-injection enhancements
 
@@ -90,4 +93,8 @@ Goal: tool becomes trustworthy for religious content.
 
 - 2026-06-18 — Project bootstrapped from planning. Confirmed: name `yatsaury`, tooling `uv`,
   OpenAI-compatible LLM client, JSONL + HF export, dataset language follows source (`--lang` override).
+- 2026-06-18 — Introduced the **three-axis** model (DESIGN.md §2): `dataset_type` (content) ×
+  `record schema` (Alpaca/ShareGPT/ChatML/qa/completion/rag/raw) × `serialization` (jsonl/hf/csv).
+  Added a new `schemas/` adapter family + `--schema` flag; exporters now serialize already-rendered
+  dicts (schema-agnostic). Default schema `chatml`.
 - _(add decisions/changes here as implementation proceeds)_
