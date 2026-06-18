@@ -12,7 +12,8 @@ content such as Sirah Nabawiyah. Because the content is religious, **faithfulnes
 - **Record schemas**: multiple trainer-ready layouts (Alpaca, ShareGPT, ChatML/OpenAI-messages,
   plain-QA, completion, RAG record, raw) — pluggable and extensible.
 - **Serialization formats**: JSONL, HuggingFace dataset, and CSV (for human review).
-- **Interface**: CLI.
+- **Interface**: CLI **and** a local web UI (`yatsaury web`) — a thin layer over the same pipeline.
+- **Sessions**: every web run is persisted to disk so reopening the web shows history.
 - **LLM**: OpenAI-compatible client (configurable `base_url` + `api_key` + `model`); works with
   OpenAI, Ollama, vLLM, LM Studio, etc.
 - **Dataset language**: follows the source language by default, overridable via `--lang`.
@@ -214,7 +215,8 @@ resumability.
 | LLM | official **`openai`** SDK with `base_url`, JSON mode | single client across all OpenAI-compatible backends; wrapped in `LLMClient` |
 | Retry/backoff | **tenacity** | robust around flaky LLM/HTTP calls |
 | HF export | **`datasets`** | `Dataset.from_list().save_to_disk()` / `push_to_hub()` |
-| UX | **rich** | progress bars, logging |
+| UX (CLI) | **rich** | progress bars, logging |
+| Web UI | **NiceGUI** | pure-Python UI (bundles FastAPI+Vue); clean default look, no HTML/JS to write; async-friendly for background jobs |
 | Quality | **ruff**, **mypy**, **pytest** (mocked LLM/HTTP) | lint/format, types, deterministic free tests |
 
 ## 9. Project Structure
@@ -244,6 +246,12 @@ src/yatsaury/
     dedup.py
   exporters/
     base.py  jsonl.py  hf.py  review_csv.py
+  session/               # persisted run history (used by web; optional for CLI)
+    models.py            # Session, SessionStatus, SessionInput
+    store.py             # SessionStore: create/list/get/update + dir layout [critical]
+  web/                   # yatsaury web (NiceGUI)
+    app.py               # single-column page: process form on top, history below
+    jobs.py              # background job runner wrapping the Orchestrator + progress
 tests/
   conftest.py  fixtures/  test_*.py
 examples/sirah_sample.txt
@@ -256,7 +264,8 @@ pyproject.toml  README.md  .env.example  config.example.toml  .gitignore
 
 **Verbs**: `generate` (end-to-end), `inspect` (load+chunk stats), `verify` (re-score JSONL),
 `export` (re-render/re-serialize an existing dataset, or build final from a reviewed file),
-`schemas` (list available record schemas + their compatible types), `config show`.
+`schemas` (list available record schemas + their compatible types), `web` (launch the UI — see §11),
+`config show`.
 
 **Key `generate` flags**: `-i/--input` (repeatable), `--source auto|pdf|url|text`,
 `-t/--type qa|instruction|rag|summary|all` (repeatable),
@@ -293,7 +302,66 @@ yatsaury export -i ./datasets/seerah_v1/qa.jsonl -s sharegpt -f hf -o ./datasets
 yatsaury export -i ./datasets/seerah_v1/reviewed.csv -s chatml -f hf -o ./datasets/final
 ```
 
-## 11. Grounding & Quality Strategy (religious-accuracy core)
+## 11. Web UI (`yatsaury web`)
+
+A local, single-user web app that is a **thin front-end over the same pipeline** — it imports and
+runs the `Orchestrator`, so the web and CLI produce identical datasets. Built with **NiceGUI**.
+
+**Launch**: `yatsaury web [--host 127.0.0.1] [--port 8080] [--workspace ./.yatsaury] [--open]`
+(defaults: localhost:8080, opens the browser).
+
+### Layout (single column)
+
+```
+┌───────────────────────────────┐
+│ Yatsaury                       │
+│ ┌───────────────────────────┐ │
+│ │ Upload PDF / URL / text   │ │   drag-drop upload + a textarea for URL/raw text
+│ └───────────────────────────┘ │
+│ [type] [schema] [format]      │   selects (multi); advanced opts collapsed (min-score, n, lang…)
+│         [ Process ]           │
+│ ──────── History ──────────── │
+│ ✓ seerah_v1   120 rows  ↓     │   click a row → details + per-file download
+│ ⏳ hadith      running…  45%   │   live progress via ui.timer poll
+└───────────────────────────────┘
+```
+
+Process form on top; history list below (newest first). Each history row shows status, row count,
+and download links. Clicking a row opens its detail (inputs, config, sample preview, outputs).
+
+### Background jobs (`web/jobs.py`)
+
+Generation is long, so **Process** enqueues a background job (asyncio task /
+`run_in_executor`) wrapping the `Orchestrator`; the UI stays responsive. The job updates the
+session's `status` and `progress` as stages complete; a `ui.timer` polls and refreshes the history
+list and progress bar. The same grounding/verify/dedup/export stages run as in the CLI.
+
+### Sessions & persistence (`session/store.py`)
+
+Everything is persisted under the workspace (default **`./.yatsaury/`** in the project folder, set
+via `--workspace` / `YATSAURY_WORKSPACE`). History = the list of session dirs, newest first.
+
+```
+./.yatsaury/
+  sessions/
+    20260618T103000-seerah-v1/        # id: sortable timestamp + slug
+      session.json                    # id, title, created_at, status, progress, inputs[], config, counts{kept,dropped}, error?
+      sources/                        # saved uploads + URL/text snapshots (reproducible)
+      samples.jsonl                   # schema-neutral Sample[] (re-render later without re-calling the LLM)
+      outputs/                        # rendered datasets per schema/format (downloadable)
+      review.csv                      # if review enabled
+      run.log
+```
+
+`SessionStatus`: `queued | running | done | error`. `SessionStore` API:
+`create(title, inputs, config) -> Session`, `list() -> list[Session]` (sorted), `get(id)`,
+`update(id, **fields)`, `path_for(id, *parts)`. Because the neutral `samples.jsonl` is kept, the web
+can re-export a finished session into another schema/format instantly (reuses §6 adapters, no LLM cost).
+
+> CLI parity: `yatsaury generate` writes directly to `-o` by default; pass `--session` to also record
+> the run into the same store so CLI and web share one history. Web always creates a session.
+
+## 12. Grounding & Quality Strategy (religious-accuracy core)
 
 Layered defense — no single mechanism is trusted alone:
 
@@ -317,7 +385,7 @@ Layered defense — no single mechanism is trusted alone:
 **Recommended default**: generation grounding + programmatic quote check + LLM judge with
 `--min-score 0.7`, then human review CSV before publishing.
 
-## 12. Knowledge-Injection Techniques
+## 13. Knowledge-Injection Techniques
 
 Fine-tuning teaches style/format more than facts; to make facts stick, maximize coverage and
 redundancy of each fact across varied surface forms:
@@ -332,20 +400,20 @@ redundancy of each fact across varied surface forms:
 - README note: for genuinely new facts, **RAG often beats fine-tuning** — the `rag` type + citations
   also yields a retrieval corpus; recommend a hybrid (fine-tune for style + RAG for fact lookup).
 
-## 13. Config & Secrets
+## 14. Config & Secrets
 
 A single pydantic-settings `Settings` (`config.py`), precedence high→low:
 
-1. CLI flags (`--model`, `--base-url`, `--api-key`, …)
-2. Env vars (`YATSAURY_*`; also accept `OPENAI_API_KEY` / `OPENAI_BASE_URL` as fallbacks)
+1. CLI flags (`--model`, `--base-url`, `--api-key`, `--workspace`, …)
+2. Env vars (`YATSAURY_*` incl. `YATSAURY_WORKSPACE`; also accept `OPENAI_API_KEY` / `OPENAI_BASE_URL` as fallbacks)
 3. `.env` file (git-ignored)
-4. `config.toml` (non-secret defaults: chunk size, per-chunk, default types/schemas, min-score, judge model)
-5. Built-in defaults
+4. `config.toml` (non-secret defaults: chunk size, per-chunk, default types/schemas, min-score, judge model, workspace dir, web host/port)
+5. Built-in defaults (workspace `./.yatsaury`, web `127.0.0.1:8080`)
 
 Ship `.env.example` and `config.example.toml`. Secrets only via env/`.env`, never committed;
-`config show` masks the key. `.gitignore`: `.env`, `.cache/`, `datasets/`, `.venv/`.
+`config show` masks the key. `.gitignore`: `.env`, `.cache/`, `datasets/`, `.venv/`, `.yatsaury/`.
 
-## 14. Testing Strategy
+## 15. Testing Strategy
 
 - **Process: TDD** (red → green → refactor). Each component is written test-first; an implementation
   is not started before its failing test exists. See `IMPLEMENTATION_PROGRESS.md` for the paired
@@ -355,4 +423,7 @@ Ship `.env.example` and `config.example.toml`. Secrets only via env/`.env`, neve
   verify (quote-check + judge), dedup, exporters.
 - Schema round-trip tests: a fixed `Sample` renders to the expected dict for every schema; the
   compatibility matrix is enforced (unsupported pairs are skipped, not malformed).
+- **Session store** is pure logic → fully unit-tested (create/list/get/update, dir layout, status
+  transitions). **Web jobs** tested with a mocked Orchestrator (progress + status updates); NiceGUI
+  pages get a light smoke test via `nicegui.testing` (page renders, Process triggers a job).
 - Local Ollama for free end-to-end manual runs. `ruff check` + `mypy` in local/CI.

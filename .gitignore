@@ -20,6 +20,7 @@ venv/
 .env
 .cache/
 datasets/
+.yatsaury/
 
 # OS / editor
 .DS_Store

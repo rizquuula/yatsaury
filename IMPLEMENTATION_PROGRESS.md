@@ -130,6 +130,25 @@ Goal: simplest full path produces valid records, proven by tests.
 - [ ] `rich` progress bars (cosmetic, no test); README + examples; raise coverage threshold
 - [ ] **Phase gate**: `uv run pytest && uv run ruff check && uv run mypy` clean; coverage ≥ target
 
+## Phase 7 — Web UI (`yatsaury web`, NiceGUI)
+
+Thin front-end over the same `Orchestrator`. Can begin once Phase 1 exists; richer after Phase 3–4.
+Storage: `./.yatsaury/`. Layout: single column (process on top, history below).
+
+- [ ] 🔴 `test_session_store.py` — `SessionStore.create/list/get/update`; dir layout created; `list()` sorted newest-first; status transitions queued→running→done/error
+- [ ] 🟢 `session/models.py` (`Session`, `SessionStatus`, `SessionInput`) + `session/store.py`
+- [ ] 🔴 `test_session_persistence.py` — finished session keeps `samples.jsonl`; re-export to another schema/format works with no LLM call
+- [ ] 🟢 wire `SessionStore` re-export path to §6 adapters + exporters
+- [ ] 🔴 `test_web_jobs.py` — background job (mocked Orchestrator) updates `status`/`progress`; failure sets `error` without crashing
+- [ ] 🟢 `web/jobs.py` — background job runner + progress callbacks
+- [ ] 🔴 `test_web_app.py` (`nicegui.testing`) — page renders; upload+text accepted; clicking **Process** creates a session & starts a job; history shows it; download link present
+- [ ] 🟢 `web/app.py` — single-column NiceGUI page (form + history + live `ui.timer` refresh)
+- [ ] 🔴 `test_cli_web.py` — `web` command builds the app/server with host/port/workspace (no real serve)
+- [ ] 🟢 `cli.py` — `web` command (`--host/--port/--workspace/--open`)
+- [ ] 🔴 `test_cli_generate_session.py` — `generate --session` records the run into the store (shared history with web)
+- [ ] 🟢 `cli.py` — `--session` flag on `generate`
+- [ ] **Phase gate**: open `yatsaury web`, upload a file, Process, see it in history, reopen → history persists; unit suite green
+
 ---
 
 ## Notes / Decisions Log
@@ -143,4 +162,8 @@ Goal: simplest full path produces valid records, proven by tests.
 - 2026-06-18 — Adopted **TDD** (red→green→refactor) as the build process; each component pairs a
   test-first 🔴 item with its 🟢 implementation. LLM/HTTP mocked in unit tests; e2e against Ollama
   is opt-in (`@pytest.mark.e2e`).
+- 2026-06-18 — Added a local **web UI** (`yatsaury web`) as a thin layer over the same pipeline.
+  Stack **NiceGUI**; sessions persisted under **`./.yatsaury/`** (gitignored) so history survives
+  restarts; layout single-column (process on top, history below); long runs as background jobs with
+  live progress. New `session/` (store) and `web/` (app+jobs) modules; `--workspace` config added.
 - _(add decisions/changes here as implementation proceeds)_
